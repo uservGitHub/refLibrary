@@ -1,7 +1,6 @@
 package lib.book.refLibrary
 
-import android.graphics.Bitmap
-import android.graphics.Rect
+import android.graphics.*
 import android.util.Log
 import lib.book.refLibrary.model.PageGrid
 import lib.book.refLibrary.model.PagePosition
@@ -45,13 +44,14 @@ class BackGrid(cellSide: Int=BackGrid.CellSide) {
 
         private var CellSide = 200
 
-        fun info(any:Any?){
+        fun info(any: Any?) {
             any?.let {
                 Log.i("_BackGrid", any.toString())
             }
         }
-        fun assert(result:Boolean){
-            if(!result){
+
+        fun assert(result: Boolean) {
+            if (!result) {
                 Log.i("_BackGrid", "assert false")
             }
         }
@@ -64,7 +64,7 @@ class BackGrid(cellSide: Int=BackGrid.CellSide) {
         if (cellSide != CellSide) {
             CellSide = cellSide
         }
-        pageGrid = PageGrid(0, 4, 4, 400, 600, 2, 0)
+        pageGrid = PageGrid(0, 4, 4, 400, 600, 2, 0, Color.GRAY)
     }
 
     //region    ZoomListener
@@ -233,16 +233,16 @@ class BackGrid(cellSide: Int=BackGrid.CellSide) {
         val pageWidth = (zoom * pageGrid.pagePerWidth).toInt()
         val maxColInd = pageColCount - 1
         val colMin = boundUpper(pageGrid.pageHorSize, pageWidth, visibleX, maxColInd)
-        if(colMin == BackGrid.InValid) return@buildSequence
+        if (colMin == BackGrid.InValid) return@buildSequence
         val colMax = boundLower(pageGrid.pageHorSize, pageWidth, visibleX + visibleWidth, maxColInd)
-        if(colMax == BackGrid.InValid) return@buildSequence
+        if (colMax == BackGrid.InValid) return@buildSequence
         if (colMin > colMax) return@buildSequence
         val pageHeight = (zoom * pageGrid.pagePerHeight).toInt()
         val maxRowInd = pageRowCount - 1
         val rowMin = boundUpper(pageGrid.pageVerSize, pageHeight, visibleY, maxRowInd)
-        if(rowMin == BackGrid.InValid) return@buildSequence
+        if (rowMin == BackGrid.InValid) return@buildSequence
         val rowMax = boundLower(pageGrid.pageVerSize, pageHeight, visibleY + visibleHeight, maxRowInd)
-        if(rowMax == BackGrid.InValid) return@buildSequence
+        if (rowMax == BackGrid.InValid) return@buildSequence
         if (rowMin > rowMax) return@buildSequence
         var ind = 0
         for (row in rowMin..rowMax) {
@@ -293,7 +293,7 @@ class BackGrid(cellSide: Int=BackGrid.CellSide) {
     //endregion
 
     //region    rectFromPage
-    fun rectFromPage(ind:Int):Rect {
+    private inline fun rectFromPage(ind: Int): Rect {
         val row = indToRowInd(ind)
         var col = indToColInd(ind)
         return Rect(calcWidth(row),
@@ -301,21 +301,32 @@ class BackGrid(cellSide: Int=BackGrid.CellSide) {
                 calcWidth(row + 1),
                 calcHeight(col + 1))
     }
-    private inline fun indToRowInd(ind:Int) = ind/pageColCount
-    private inline fun indToColInd(ind:Int) = ind.rem(pageColCount)
+
+    private inline fun indToRowInd(ind: Int) = ind / pageColCount
+    private inline fun indToColInd(ind: Int) = ind.rem(pageColCount)
     //endregion
 
-    //region    rectFromCell
-    private inline fun rectFromCell(key:Int):Rect{
-        val x = key.rowInd* CellSide
+    //region    rectFromCell pageIndFromScreen
+    fun pageIndFromScreen(x: Float, y: Float): Int {
+        var vx = x.toInt() + visibleX
+        var vy = y.toInt() + visibleY
+        pageInds.forEach {
+            val rect = rectFromPage(it)
+            if (rect.contains(vx, vy)) return it
+        }
+        return InValid
+    }
+
+    private inline fun rectFromCell(key: Int): Rect {
+        val x = key.rowInd * CellSide
         val y = key.colInd * CellSide
-        return Rect(x,y,x+ CellSide,y+ CellSide)
+        return Rect(x, y, x + CellSide, y + CellSide)
     }
     //endregion
 
     //region    visibleProcess: build cellBitmap
-    fun visibleProcess(pagePorc:(pageInd:Int,rect:Rect)->Bitmap,cellCanProc:(cellKey:Int)->Boolean ,cellProc:(cellKey:Int,backBmp:Bitmap,sRect:Rect,tRect:Rect)->Unit): Boolean{
-        if(!hasVisible) return false
+    fun visibleProcess(pagePorc: (pageInd: Int, rect: Rect) -> Bitmap, cellCanProc: (cellKey: Int) -> Boolean, cellProc: (cellKey: Int, backBmp: Bitmap, sRect: Rect, tRect: Rect) -> Unit): Boolean {
+        if (!hasVisible) return false
 
         //region    check valid point
         var xBeg = if (visibleX < 0) 0 else visibleX
@@ -331,20 +342,20 @@ class BackGrid(cellSide: Int=BackGrid.CellSide) {
         var cellRowMax = toCellLowerInd(yEnd)
 
         //region    big rectangle
-        xBeg = cellColMin* CellSide
-        xEnd = (cellColMax+1)* CellSide
-        yBeg = cellRowMin* CellSide
-        yEnd = (cellRowMax+1)* CellSide
+        xBeg = cellColMin * CellSide
+        xEnd = (cellColMax + 1) * CellSide
+        yBeg = cellRowMin * CellSide
+        yEnd = (cellRowMax + 1) * CellSide
         //endregion
 
         val pageWidth = (zoom * pageGrid.pagePerWidth).toInt()
         val pageHeight = (zoom * pageGrid.pagePerHeight).toInt()
         val maxColInd = pageColCount - 1
         val maxRowInd = pageRowCount - 1
-        val pageColMin = boundUpper(pageGrid.pageHorSize,pageWidth,xBeg,maxColInd)
-        val pageColMax = boundLower(pageGrid.pageHorSize,pageWidth,xEnd,maxColInd)
-        val pageRowMin = boundUpper(pageGrid.pageVerSize,pageHeight,yBeg,maxRowInd)
-        val pageRowMax = boundLower(pageGrid.pageVerSize,pageHeight,yEnd,maxRowInd)
+        val pageColMin = boundUpper(pageGrid.pageHorSize, pageWidth, xBeg, maxColInd)
+        val pageColMax = boundLower(pageGrid.pageHorSize, pageWidth, xEnd, maxColInd)
+        val pageRowMin = boundUpper(pageGrid.pageVerSize, pageHeight, yBeg, maxRowInd)
+        val pageRowMax = boundLower(pageGrid.pageVerSize, pageHeight, yEnd, maxRowInd)
 
         var ind = 0
         //cell boundary
@@ -355,13 +366,13 @@ class BackGrid(cellSide: Int=BackGrid.CellSide) {
         for (row in pageRowMin..pageRowMax) {
             for (col in pageColMin..pageColMax) {
                 ind = row * pageColCount + col
-                if (ind < pageCount){
+                if (ind < pageCount) {
                     val bigRect = Rect(visRect)
-                    val pageRect = Rect(calcWidth(col),calcHeight(row),calcWidth(col+1),calcHeight(row+1))
+                    val pageRect = Rect(calcWidth(col), calcHeight(row), calcWidth(col + 1), calcHeight(row + 1))
                     info("page=$ind:${pageRect.toString()}")
                     hasIntersect = bigRect.intersect(pageRect)
                     assert(hasIntersect)
-                    bigRect.offset(pageRect.left, pageRect.top)
+                    bigRect.offset(-pageRect.left, -pageRect.top)
                     val pageBmp by lazy {
                         pagePorc(ind, bigRect)
                     }
@@ -371,10 +382,10 @@ class BackGrid(cellSide: Int=BackGrid.CellSide) {
                     cellColMax = toCellLowerInd(xEnd)
                     cellRowMin = toCellUpperInd(yBeg)
                     cellRowMax = toCellLowerInd(yEnd)
-                    for (cellRow in cellRowMin..cellRowMax){
-                        for(cellCol in cellColMin..cellColMax){
-                            val key = buildKey(cellRow,cellCol)
-                            if(cellCanProc(key)) {
+                    for (cellRow in cellRowMin..cellRowMax) {
+                        for (cellCol in cellColMin..cellColMax) {
+                            val key = buildKey(cellRow, cellCol)
+                            if (cellCanProc(key)) {
                                 val cellRect = Rect(cellRow * CellSide, cellCol * CellSide, (cellRow + 1) * CellSide, (cellCol + 1) * CellSide)
                                 info("cell=$key:${cellRect.toString()}")
                                 val interRect = Rect(cellRect)
@@ -393,6 +404,97 @@ class BackGrid(cellSide: Int=BackGrid.CellSide) {
         info("End --")
         return true
     }
+    //endregion
+
+    //region    drawPageOutline
+    fun drawPageOutline(canvas: Canvas, drawPage: (pageInd: Int, canvas: Canvas, pageRect: Rect, clipPageRect: Rect) -> Unit) {
+        var horPaint: Paint? = null
+        var verPaint: Paint? = null
+        if (pageGrid.pageHorSize > 0) {
+            horPaint = Paint().apply {
+                color = pageGrid.pageMarginColor
+                style = Paint.Style.STROKE
+                strokeWidth = pageGrid.pageHorSize.toFloat()
+            }
+        }
+        if (pageGrid.pageVerSize > 0) {
+            verPaint = Paint().apply {
+                color = pageGrid.pageMarginColor
+                style = Paint.Style.STROKE
+                strokeWidth = pageGrid.pageVerSize.toFloat()
+            }
+        }
+        canvas.translate(-shockX, -shockY)
+        val rectVisible = Rect(visibleX, visibleY, visibleX + visibleWidth, visibleY + visibleHeight)
+        pageInds.forEach {
+            val pageRect = rectFromPage(it)
+            horPaint?.let {
+                val x1 = pageRect.left.toFloat() - it.strokeWidth
+                val x2 = pageRect.right.toFloat() + it.strokeWidth
+                val yTop = pageRect.top.toFloat() - it.strokeWidth / 2
+                canvas.drawLine(x1, yTop, x2, yTop, it)
+                val yBottom = pageRect.bottom.toFloat() + it.strokeWidth / 2
+                canvas.drawLine(x1, yBottom, x2, yBottom, it)
+            }
+            verPaint?.let {
+                val y1 = pageRect.top.toFloat() - it.strokeWidth
+                val y2 = pageRect.bottom.toFloat() + it.strokeWidth
+                val xLeft = pageRect.left.toFloat() - it.strokeWidth / 2
+                canvas.drawLine(xLeft, y1, xLeft, y2, it)
+                val xRight = pageRect.right.toFloat() + it.strokeWidth / 2
+                canvas.drawLine(xRight, y1, xRight, y2, it)
+            }
+            val clipPageRect = Rect(pageRect)
+            clipPageRect.intersect(rectVisible)
+            drawPage(it, canvas, pageRect, clipPageRect)
+        }
+        canvas.translate(shockX, shockY)
+    }
+    //endregion
+
+    //region    fitPageWidth fitFullWidth
+    var fitPageWidth:Boolean = false
+        set(value) {
+            field = value
+            if(field){
+                val pageInd = pageIndFromScreen(visibleWidth.toFloat()/2,visibleHeight.toFloat()/2)
+                if(pageInd != InValid) {
+                    fitFullWidth = false
+                    zoom = (visibleWidth - pageGrid.pageHorSize * 2) / pageGrid.pagePerWidth.toFloat()
+                    val rect = rectFromPage(pageInd)
+                    moveTo(rect.left-pageGrid.pageHorSize, rect.top-pageGrid.pageVerSize)
+                }
+            }
+        }
+    var fitFullWidth: Boolean = false
+        set(value) {
+            field = value
+            if (field) {
+                fitPageWidth = false
+                zoom = (visibleWidth - pageGrid.pageHorSize * (pageColCount + 1)) / (pageGrid.pagePerWidth * pageColCount).toFloat()
+            }
+        }
+    var fitPageHeight: Boolean = false
+        set(value) {
+            field = value
+            if (field) {
+                val pageInd = pageIndFromScreen(visibleWidth.toFloat()/2,visibleHeight.toFloat()/2)
+                if(pageInd != -1) {
+                    fitFullHeight = false
+                    zoom = (visibleHeight - pageGrid.pageVerSize * 2) / pageGrid.pagePerHeight.toFloat()
+                    val rect = rectFromPage(pageInd)
+                    moveTo(rect.left-pageGrid.pageHorSize, rect.top-pageGrid.pageVerSize)
+                }
+            }
+        }
+    var fitFullHeight: Boolean = false
+        set(value) {
+            field = value
+            if (field) {
+                fitPageHeight = false
+                zoom = (visibleHeight - pageGrid.pageVerSize * (pageRowCount + 1)) / (pageGrid.pagePerHeight * pageRowCount).toFloat()
+            }
+        }
     //endregion
 }
 
