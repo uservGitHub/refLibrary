@@ -1,6 +1,8 @@
 package lib.book.refLibrary
 
+import android.graphics.Bitmap
 import android.graphics.Rect
+import android.util.Log
 import lib.book.refLibrary.model.PageGrid
 import lib.book.refLibrary.model.PagePosition
 import kotlin.coroutines.experimental.*
@@ -42,6 +44,17 @@ class BackGrid(cellSide: Int=BackGrid.CellSide) {
         }
 
         private var CellSide = 200
+
+        fun info(any:Any?){
+            any?.let {
+                Log.i("_BackGrid", any.toString())
+            }
+        }
+        fun assert(result:Boolean){
+            if(!result){
+                Log.i("_BackGrid", "assert false")
+            }
+        }
     }
 
     var pageGrid: PageGrid
@@ -220,12 +233,16 @@ class BackGrid(cellSide: Int=BackGrid.CellSide) {
         val pageWidth = (zoom * pageGrid.pagePerWidth).toInt()
         val maxColInd = pageColCount - 1
         val colMin = boundUpper(pageGrid.pageHorSize, pageWidth, visibleX, maxColInd)
+        if(colMin == BackGrid.InValid) return@buildSequence
         val colMax = boundLower(pageGrid.pageHorSize, pageWidth, visibleX + visibleWidth, maxColInd)
+        if(colMax == BackGrid.InValid) return@buildSequence
         if (colMin > colMax) return@buildSequence
         val pageHeight = (zoom * pageGrid.pagePerHeight).toInt()
         val maxRowInd = pageRowCount - 1
         val rowMin = boundUpper(pageGrid.pageVerSize, pageHeight, visibleY, maxRowInd)
+        if(rowMin == BackGrid.InValid) return@buildSequence
         val rowMax = boundLower(pageGrid.pageVerSize, pageHeight, visibleY + visibleHeight, maxRowInd)
+        if(rowMax == BackGrid.InValid) return@buildSequence
         if (rowMin > rowMax) return@buildSequence
         var ind = 0
         for (row in rowMin..rowMax) {
@@ -293,6 +310,88 @@ class BackGrid(cellSide: Int=BackGrid.CellSide) {
         val x = key.rowInd* CellSide
         val y = key.colInd * CellSide
         return Rect(x,y,x+ CellSide,y+ CellSide)
+    }
+    //endregion
+
+    //region    visibleProcess: build cellBitmap
+    fun visibleProcess(pagePorc:(pageInd:Int,rect:Rect)->Bitmap,cellCanProc:(cellKey:Int)->Boolean ,cellProc:(cellKey:Int,backBmp:Bitmap,sRect:Rect,tRect:Rect)->Unit): Boolean{
+        if(!hasVisible) return false
+
+        //region    check valid point
+        var xBeg = if (visibleX < 0) 0 else visibleX
+        var yBeg = if (visibleY < 0) 0 else visibleY
+        var xEnd = Math.min(visibleX + visibleWidth, width)
+        var yEnd = Math.min(visibleY + visibleHeight, height)
+        if (xBeg >= xEnd || yBeg >= yEnd) return false
+        //endregion
+
+        var cellColMin = toCellUpperInd(xBeg)
+        var cellColMax = toCellLowerInd(xEnd)
+        var cellRowMin = toCellUpperInd(yBeg)
+        var cellRowMax = toCellLowerInd(yEnd)
+
+        //region    big rectangle
+        xBeg = cellColMin* CellSide
+        xEnd = (cellColMax+1)* CellSide
+        yBeg = cellRowMin* CellSide
+        yEnd = (cellRowMax+1)* CellSide
+        //endregion
+
+        val pageWidth = (zoom * pageGrid.pagePerWidth).toInt()
+        val pageHeight = (zoom * pageGrid.pagePerHeight).toInt()
+        val maxColInd = pageColCount - 1
+        val maxRowInd = pageRowCount - 1
+        val pageColMin = boundUpper(pageGrid.pageHorSize,pageWidth,xBeg,maxColInd)
+        val pageColMax = boundLower(pageGrid.pageHorSize,pageWidth,xEnd,maxColInd)
+        val pageRowMin = boundUpper(pageGrid.pageVerSize,pageHeight,yBeg,maxRowInd)
+        val pageRowMax = boundLower(pageGrid.pageVerSize,pageHeight,yEnd,maxRowInd)
+
+        var ind = 0
+        //cell boundary
+        val visRect = Rect(xBeg, yBeg, xEnd, yEnd)
+        info("Begin --")
+        info(visRect)
+        var hasIntersect = true
+        for (row in pageRowMin..pageRowMax) {
+            for (col in pageColMin..pageColMax) {
+                ind = row * pageColCount + col
+                if (ind < pageCount){
+                    val bigRect = Rect(visRect)
+                    val pageRect = Rect(calcWidth(col),calcHeight(row),calcWidth(col+1),calcHeight(row+1))
+                    info("page=$ind:${pageRect.toString()}")
+                    hasIntersect = bigRect.intersect(pageRect)
+                    assert(hasIntersect)
+                    bigRect.offset(pageRect.left, pageRect.top)
+                    val pageBmp by lazy {
+                        pagePorc(ind, bigRect)
+                    }
+                    //region    cellRects completed cell rendering
+                    //bigRect already changed
+                    cellColMin = toCellUpperInd(xBeg)
+                    cellColMax = toCellLowerInd(xEnd)
+                    cellRowMin = toCellUpperInd(yBeg)
+                    cellRowMax = toCellLowerInd(yEnd)
+                    for (cellRow in cellRowMin..cellRowMax){
+                        for(cellCol in cellColMin..cellColMax){
+                            val key = buildKey(cellRow,cellCol)
+                            if(cellCanProc(key)) {
+                                val cellRect = Rect(cellRow * CellSide, cellCol * CellSide, (cellRow + 1) * CellSide, (cellCol + 1) * CellSide)
+                                info("cell=$key:${cellRect.toString()}")
+                                val interRect = Rect(cellRect)
+                                hasIntersect = interRect.intersect(pageRect)
+                                assert(hasIntersect)
+                                val sRect = Rect(interRect).apply { offset(-pageRect.left, -pageRect.top) }
+                                val tRect = Rect(interRect).apply { offset(-cellRect.left, -cellRect.top) }
+                                cellProc(key, pageBmp, sRect, tRect)
+                            }
+                        }
+                    }
+                    //endregion
+                }
+            }
+        }
+        info("End --")
+        return true
     }
     //endregion
 }
