@@ -118,17 +118,35 @@ class DrawLayout(ctx:Context):RelativeLayout(ctx){
         })
     }
 
-    fun onMove(deltaX:Float, deltaY:Float){
+    fun moveOffset(deltaX:Float, deltaY:Float){
         backGrid.moveOffset(deltaX,deltaY)
         invalidate()
     }
-    fun onZoom(deltaZoom: Float, centerX:Float, centerY:Float){
+    fun moveTo(x:Float, y:Float){
+        backGrid.moveTo(x.toInt(),y.toInt())
+        invalidate()
+    }
 
+    fun zoomOffset(dr:Float){
+        val visRect = backGrid.rectVisible
+        zoomOffset(dr, visRect.exactCenterX(), visRect.exactCenterY())
+    }
+    fun zoomOffsetFromScreen(dr:Float,cx:Float,cy:Float){
+        val x = cx+backGrid.visibleX
+        val y = cy+backGrid.visibleY
+        zoomOffset(dr,x,y)
+    }
+    private fun zoomOffset(dr:Float,cx:Float,cy:Float){
+        backGrid.moveOffset(-cx, -cy)
+        backGrid.zoomTo(backGrid.zoom*dr)
+        backGrid.moveOffset(cx*dr,cy*dr)
+        invalidate()
     }
     fun onLoad(){
 
     }
     fun onClick(e: MotionEvent):Boolean{
+        zoomOffsetFromScreen(0.8F, e.x, e.y)
         /*val pageInd = backMap.getPageIndFromScreen(e.x,e.y)
         val page = pageBuffer.fromInd(pageInd)
         if(page.rawFile.next()){

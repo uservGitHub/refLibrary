@@ -33,7 +33,7 @@ class DragPinManager(host: DrawLayout):
     }
 
     override fun onDoubleTap(e: MotionEvent): Boolean {
-        host.onZoom(1.2F, e.x, e.y)
+        host.zoomOffsetFromScreen(1.2F, e.x, e.y)
         return true
     }
 
@@ -73,7 +73,7 @@ class DragPinManager(host: DrawLayout):
 
     override fun onScroll(e1: MotionEvent?, e2: MotionEvent?, distanceX: Float, distanceY: Float): Boolean {
         scrolling = true
-        host.onMove(distanceX, distanceY)
+        host.moveOffset(distanceX, distanceY)
         return true
     }
 
@@ -92,7 +92,7 @@ class DragPinManager(host: DrawLayout):
     override fun onScale(detector: ScaleGestureDetector): Boolean {
         val factor = detector.scaleFactor
         //val dr = detector?.getScaleFactor()
-        host.onZoom(factor, detector.focusX,detector.focusY)
+        host.zoomOffsetFromScreen(factor, detector.focusX,detector.focusY)
 
         return true
     }

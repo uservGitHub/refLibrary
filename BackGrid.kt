@@ -296,16 +296,17 @@ class BackGrid(cellSide: Int=BackGrid.CellSide) {
     }
     //endregion
 
+    //region    rectVisible
+    val rectVisible:Rect
+        get() = Rect(visibleX,visibleY,visibleX+visibleWidth,visibleY+visibleHeight)
+    //endregion
+
     //region    rectFromPage
     private inline fun rectFromPage(ind: Int): Rect {
         val row = indToRowInd(ind)
         var col = indToColInd(ind)
         return Rect(pageLeft(col),pageTop(row),
                 pageRight(col),pageBottom(row))
-        /*return Rect(calcWidth(row),
-                calcHeight(col),
-                calcWidth(row + 1),
-                calcHeight(col + 1))*/
     }
 
     private inline fun indToRowInd(ind: Int) = ind / pageColCount
@@ -377,7 +378,7 @@ class BackGrid(cellSide: Int=BackGrid.CellSide) {
                 ind = row * pageColCount + col
                 if (ind < pageCount) {
                     val bigRect = Rect(visRect)
-                    val pageRect = Rect(calcWidth(col), calcHeight(row), calcWidth(col + 1), calcHeight(row + 1))
+                    val pageRect = Rect(pageLeft(col), pageTop(row), pageRight(col), pageBottom(row))
                     info("page=$ind:${pageRect.toString()}")
                     hasIntersect = bigRect.intersect(pageRect)
                     assert(hasIntersect)
