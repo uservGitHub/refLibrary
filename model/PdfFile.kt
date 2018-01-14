@@ -65,6 +65,31 @@ class PdfFile(private val filePath:String,private val ctx: Context) {
         }
         return false
     }
+    fun takeRect(rect: Rect, zoom:Float, ind: Int, fetch: (Bitmap) -> Unit): Boolean {
+        if (openPage(ind)) {
+            val bitmap = Bitmap.createBitmap(rect.width(), rect.height(), Bitmap.Config.RGB_565)
+            val rectSize = pageSize(ind)
+            val pageWidth = (zoom* rectSize.width).toInt()
+            val pageHeight = (zoom*rectSize.height).toInt()
+            pdfiumCore.renderPageBitmap(pdfDocument, bitmap, ind,
+                    -rect.left, -rect.top, pageWidth, pageHeight)
+            fetch(bitmap)
+            return true
+        }
+        return false
+    }
+    fun bmpFromRect(rect: Rect, zoom:Float, ind: Int):Bitmap?{
+        if (openPage(ind)) {
+            val bitmap = Bitmap.createBitmap(rect.width(), rect.height(), Bitmap.Config.RGB_565)
+            val rectSize = pageSize(ind)
+            val pageWidth = (zoom* rectSize.width).toInt()
+            val pageHeight = (zoom*rectSize.height).toInt()
+            pdfiumCore.renderPageBitmap(pdfDocument, bitmap, ind,
+                    -rect.left, -rect.top, pageWidth, pageHeight)
+            return bitmap
+        }
+        return null
+    }
 
     fun dispose() {
         if (canDisposed) pdfiumCore.closeDocument(pdfDocument)

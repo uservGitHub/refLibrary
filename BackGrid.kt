@@ -325,7 +325,10 @@ class BackGrid(cellSide: Int=BackGrid.CellSide) {
     //endregion
 
     //region    visibleProcess: build cellBitmap
-    fun visibleProcess(pagePorc: (pageInd: Int, rect: Rect) -> Bitmap, cellCanProc: (cellKey: Int) -> Boolean, cellProc: (cellKey: Int, backBmp: Bitmap, sRect: Rect, tRect: Rect) -> Unit): Boolean {
+    fun visibleProcess(pagePorc: (pageInd: Int, rect: Rect) -> Bitmap,
+                       cellCanProc: (cellKey: Int) -> Boolean,
+                       cellProc: (cellKey: Int, backBmp: Bitmap, sRect: Rect, tRect: Rect) -> Unit,
+                       procEnd:(cellKey:Int) -> Unit): Boolean {
         if (!hasVisible) return false
 
         //region    check valid point
@@ -378,12 +381,12 @@ class BackGrid(cellSide: Int=BackGrid.CellSide) {
                     }
                     //region    cellRects completed cell rendering
                     //bigRect already changed
-                    cellColMin = toCellUpperInd(xBeg)
-                    cellColMax = toCellLowerInd(xEnd)
-                    cellRowMin = toCellUpperInd(yBeg)
-                    cellRowMax = toCellLowerInd(yEnd)
-                    for (cellRow in cellRowMin..cellRowMax) {
-                        for (cellCol in cellColMin..cellColMax) {
+                    val pageCellColMin = toCellUpperInd(bigRect.left)
+                    val pageCellColMax = toCellLowerInd(bigRect.right)
+                    val pageCellRowMin = toCellUpperInd(bigRect.top)
+                    val pageCellRowMax = toCellLowerInd(bigRect.bottom)
+                    for (cellRow in pageCellRowMin..pageCellRowMax) {
+                        for (cellCol in pageCellColMin..pageCellColMax) {
                             val key = buildKey(cellRow, cellCol)
                             if (cellCanProc(key)) {
                                 val cellRect = Rect(cellRow * CellSide, cellCol * CellSide, (cellRow + 1) * CellSide, (cellCol + 1) * CellSide)
@@ -399,6 +402,12 @@ class BackGrid(cellSide: Int=BackGrid.CellSide) {
                     }
                     //endregion
                 }
+            }
+        }
+
+        for (row in cellRowMin..cellRowMax){
+            for(col in cellColMin..cellColMax){
+                procEnd(buildKey(row,col))
             }
         }
         info("End --")
