@@ -131,10 +131,12 @@ class BackGrid(cellSide: Int=BackGrid.CellSide) {
     //region visibleX visibleY visibleWidth visibleHeight
     var visibleX: Int = 0
         private set
-    private var shockX = 0F
+    var shockX = 0F
+        private set
     var visibleY: Int = 0
         private set
-    private var shockY = 0F
+    var shockY = 0F
+        private set
     var visibleWidth = 0
         private set
     var visibleHeight = 0
@@ -232,7 +234,30 @@ class BackGrid(cellSide: Int=BackGrid.CellSide) {
 
     //endregion
 
-    //region    pageInds
+    //region    pageInds cellKeys
+    val cellKeys = buildSequence<Int> {
+        val xBeg = if (visibleX < 0) 0 else visibleX
+        val yBeg = if (visibleY < 0) 0 else visibleY
+        val xEnd = Math.min(visibleX + visibleWidth, width)
+        val yEnd = Math.min(visibleY + visibleHeight, height)
+        if (xBeg >= xEnd || yBeg >= yEnd) return@buildSequence
+
+        val cellColMin = toCellLowerInd(xBeg)
+        val cellColMax = toCellUpperInd(xEnd)
+        val cellRowMin = toCellLowerInd(yBeg)
+        val cellRowMax = toCellUpperInd(yEnd)
+
+        for (row in cellRowMin..cellRowMax){
+            for (col in cellColMin..cellColMax){
+                yield(buildKey(row, col))
+            }
+        }
+
+/*        return Rect(toCellLowerValue(xBeg),
+                toCellLowerValue(yBeg),
+                toCellUpperValue(xEnd),
+                toCellUpperValue(yEnd))*/
+    }
     val pageInds = buildSequence<Int> {
         val pageWidth = (zoom * pageGrid.pagePerWidth).toInt()
         val maxColInd = pageColCount - 1
@@ -335,7 +360,8 @@ class BackGrid(cellSide: Int=BackGrid.CellSide) {
     fun visibleProcess(pagePorc: (pageInd: Int, rect: Rect) -> Bitmap,
                        cellCanProc: (cellKey: Int) -> Boolean,
                        cellProc: (cellKey: Int, backBmp: Bitmap, sRect: Rect, tRect: Rect) -> Unit,
-                       procEnd:(cellKey:Int) -> Unit): Boolean {
+                       procEnd:(cellKey:Int) -> Unit,
+                       finished:()->Unit): Boolean {
         if (!hasVisible) return false
 
         //region    check valid point
@@ -382,28 +408,35 @@ class BackGrid(cellSide: Int=BackGrid.CellSide) {
                     info("page=$ind:${pageRect.toString()}")
                     hasIntersect = bigRect.intersect(pageRect)
                     assert(hasIntersect)
-                    bigRect.offset(-pageRect.left, -pageRect.top)
-                    val pageBmp by lazy {
-                        pagePorc(ind, bigRect)
-                    }
                     //region    cellRects completed cell rendering
                     //bigRect already changed
                     val pageCellColMin = toCellUpperInd(bigRect.left)
                     val pageCellColMax = toCellLowerInd(bigRect.right)
                     val pageCellRowMin = toCellUpperInd(bigRect.top)
                     val pageCellRowMax = toCellLowerInd(bigRect.bottom)
+
+                    bigRect.offset(-pageRect.left, -pageRect.top)
+                    val pageBmp by lazy {
+                        pagePorc(ind, bigRect)
+                    }
+
                     for (cellRow in pageCellRowMin..pageCellRowMax) {
                         for (cellCol in pageCellColMin..pageCellColMax) {
                             val key = buildKey(cellRow, cellCol)
                             if (cellCanProc(key)) {
                                 val cellRect = Rect(cellRow * CellSide, cellCol * CellSide, (cellRow + 1) * CellSide, (cellCol + 1) * CellSide)
-                                info("cell=$key:${cellRect.toString()}")
+                                info("cell=${keyToString(key)}:")//${cellRect.toString()}
                                 val interRect = Rect(cellRect)
                                 hasIntersect = interRect.intersect(pageRect)
-                                assert(hasIntersect)
+                                if(!hasIntersect){
+                                    assert(hasIntersect)
+                                }
+
                                 val sRect = Rect(interRect).apply { offset(-pageRect.left, -pageRect.top) }
                                 val tRect = Rect(interRect).apply { offset(-cellRect.left, -cellRect.top) }
                                 cellProc(key, pageBmp, sRect, tRect)
+                            }else{
+                                info("cell=!${keyToString(key)}:")
                             }
                         }
                     }
@@ -418,6 +451,7 @@ class BackGrid(cellSide: Int=BackGrid.CellSide) {
             }
         }
         info("End --")
+        finished()
         return true
     }
     //endregion

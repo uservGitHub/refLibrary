@@ -4,6 +4,8 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Rect
+import lib.book.refLibrary.BackGrid.Companion.rowInd
+import lib.book.refLibrary.BackGrid.Companion.colInd
 
 /**
  * Created by Administrator on 2018/1/12.
@@ -48,6 +50,8 @@ class BmpCell(val CellSide: Int) {
         bitmap.eraseColor(colorInt)
         return true
     }
+    fun mutilSelect(key: Int, flag: Int, colorInt:Int) =
+            select(key,flag,colorInt) || !canUse
     fun past(backBmp: Bitmap, sRect: Rect, tRect: Rect){
         if(!canUse){
             val canvas = Canvas(bitmap)
@@ -56,6 +60,27 @@ class BmpCell(val CellSide: Int) {
     }
     fun check(flagTick:Int):Boolean{
         return flagTick == opTick
+    }
+    val rect: Rect
+        get() {
+            val row = key.rowInd
+            val col = key.colInd
+            val left = col*CellSide
+            val right = left+CellSide
+            val top = row*CellSide
+            val bottom = top+CellSide
+            return Rect(left,top,right,bottom)
+        }
+    fun tryDraw(canvas: Canvas, zoomFlag:Int): Boolean{
+        if (check(zoomFlag)){
+            val rect = Rect(key.colInd*CellSide,
+                    key.rowInd*CellSide,
+                    (key.colInd+1)*CellSide,
+                    (key.rowInd+1)*CellSide)
+            canvas.drawBitmap(bitmap,rect,rect, Paint())
+            return true
+        }
+        return false
     }
     //操作后,操作标志相同，表示成功
     fun opEnd(flagTick: Int) {

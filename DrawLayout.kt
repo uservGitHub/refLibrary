@@ -65,10 +65,43 @@ class DrawLayout(ctx:Context):RelativeLayout(ctx){
             style = Paint.Style.FILL
             color = Color.BLUE
         }
-        backGrid.drawPageOutline(canvas,{
+        /*backGrid.drawPageOutline(canvas,{
             pageInd: Int, canvas: Canvas, pageRect: Rect, clipPageRect: Rect ->
                 canvas.drawRect(pageRect, pagePaint)
-        })
+        })*/
+
+        if(allReady) {
+            allReady = false
+            canvas.translate(-backGrid.shockX, -backGrid.shockY)
+            backGrid.cellKeys.forEachIndexed { index, i ->
+                info(index)
+                val cell = cellBuffer.fromKey(i)
+                info(BackGrid.keyToString(i))
+                //val canDraw = cell.tryDraw(canvas, zoomFlag)
+                canvas.drawBitmap(cell.bitmap,Rect(0,0,cellSide,cellSide) ,cell.rect, Paint())
+                drawText(canvas, cell.rect, BackGrid.keyToString(i))
+            }
+            canvas.translate(backGrid.shockX, backGrid.shockY)
+        }
+    }
+    private val textPaint = Paint().apply {
+        flags = Paint.ANTI_ALIAS_FLAG
+        style = Paint.Style.FILL
+        textAlign = Paint.Align.CENTER
+        textSize = 38F
+        color = Color.RED
+    }
+    private val fontDeltaHeight: Int
+        get() {
+            val f = textPaint.fontMetricsInt
+            return (f.top + f.bottom) / 2
+        }
+    private fun drawText(canvas: Canvas, rect: Rect, msg: Any? = null) {
+        //canvas.drawRect(rect, redPaint)
+        msg?.let {
+            canvas.drawText(msg.toString(), rect.centerX().toFloat(), (rect.centerY() - fontDeltaHeight).toFloat(), textPaint)
+            info(rect)
+        }
     }
     fun load(names:List<String>){
         try {
@@ -91,33 +124,46 @@ class DrawLayout(ctx:Context):RelativeLayout(ctx){
                         {
                             timeTick: Int, data: Any? ->
                             if(timeTick == zoomFlag){
-                                preRenderCells(zoomFlag)
+                                preRenderCells(zoomFlag, zoom)
                             }
                         })
             }
             isLoad = true
+            onLoad()
             dragPinManager.enable()
             invalidate()
         }catch (e:Exception){
             info(e)
         }
     }
-    private fun preRenderCells(zoomFlag:Int){
+    private fun preRenderCells(zoomFlag:Int, zoom:Float){
+        info("preRenderCells")
+        backGrid.resetVisible(width, height)
         backGrid.visibleProcess({ pageInd: Int, rect: Rect ->
             pageBuffer.fromInd(pageInd).bmpFromRect(pageInd, rect, zoom) ?:
                     Bitmap.createBitmap(rect.width(), rect.height(), Bitmap.Config.RGB_565).apply {
                         eraseColor(Color.YELLOW)
                     }
         },{
-            cellKey: Int -> cellBuffer.fromKey(cellKey).select(cellKey,zoomFlag,Color.GREEN)
+            cellKey: Int -> cellBuffer.fromKey(cellKey).mutilSelect(cellKey,zoomFlag,Color.GREEN)
         },{
             cellKey: Int, backBmp: Bitmap, sRect: Rect, tRect: Rect ->
              cellBuffer.fromKey(cellKey).past(backBmp,sRect, tRect)
         },{
-            cellKey: Int ->  cellBuffer.fromKey(cellKey).opEnd(zoomFlag)
+            cellKey: Int ->
+            cellBuffer.fromKey(cellKey).opEnd(zoomFlag)
+        },{
+            info("finish")
+            this@DrawLayout.post {
+                allReady = true
+                this@DrawLayout.invalidate()
+            }
         })
     }
+    @Volatile
+    private var allReady = false
 
+    //region    move zoom
     fun moveOffset(deltaX:Float, deltaY:Float){
         backGrid.moveOffset(deltaX,deltaY)
         invalidate()
@@ -126,7 +172,6 @@ class DrawLayout(ctx:Context):RelativeLayout(ctx){
         backGrid.moveTo(x.toInt(),y.toInt())
         invalidate()
     }
-
     fun zoomOffset(dr:Float){
         val visRect = backGrid.rectVisible
         zoomOffset(dr, visRect.exactCenterX(), visRect.exactCenterY())
@@ -142,8 +187,10 @@ class DrawLayout(ctx:Context):RelativeLayout(ctx){
         backGrid.moveOffset(cx*dr,cy*dr)
         invalidate()
     }
-    fun onLoad(){
+    //endregion
 
+    fun onLoad(){
+        preRenderCells(zoomFlag, zoom)
     }
     fun onClick(e: MotionEvent):Boolean{
         zoomOffsetFromScreen(0.8F, e.x, e.y)
