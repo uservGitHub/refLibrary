@@ -14,10 +14,10 @@ class BackPage(val name:String, val ind:Int, val ctx: Context) {
     }
     var left: Int = 0
     var top: Int = 0
-    fun tryTakeRect(pageInd:Int, rect: Rect, zoom: Float, fetch: (bmp: Bitmap) -> Unit): Boolean {
+    /*fun tryTakeRect(pageInd:Int, rect: Rect, zoom: Float, fetch: (bmp: Bitmap) -> Unit): Boolean {
         rect.offset((zoom * left).toInt(), (zoom * top).toInt())
         return pdfFile.takeRect(rect, zoom, pageInd, fetch)
-    }
+    }*/
     fun bmpFromRect(pageInd:Int, rect: Rect, zoom: Float): Bitmap? {
         rect.offset((zoom * left).toInt(), (zoom * top).toInt())
         //return pdfFile.takeRect(rect, zoom, pageInd, fetch)

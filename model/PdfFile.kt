@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Rect
 import android.os.ParcelFileDescriptor
+import android.util.Log
 import android.util.SparseBooleanArray
 import com.shockwave.pdfium.PdfDocument
 import com.shockwave.pdfium.PdfiumCore
@@ -32,6 +33,18 @@ class PdfFile(private val filePath:String,private val ctx: Context) {
             get() {
                 return globalPdfiumCore!!
             }
+
+        fun info(any: Any?) {
+            any?.let {
+                Log.i("_PdfFile", any.toString())
+            }
+        }
+
+        fun assert(result: Boolean) {
+            if (!result) {
+                Log.i("_PdfFile", "assert false")
+            }
+        }
     }
 
     private lateinit var pdfDocument: PdfDocument
@@ -55,7 +68,7 @@ class PdfFile(private val filePath:String,private val ctx: Context) {
 
 
     fun pageSize(ind: Int) = pdfiumCore.getPageSize(pdfDocument, ind)
-    fun takeRect(rect: Rect, pageWidth: Int, pageHeight: Int, ind: Int, fetch: (Bitmap) -> Unit): Boolean {
+/*    fun takeRect(rect: Rect, pageWidth: Int, pageHeight: Int, ind: Int, fetch: (Bitmap) -> Unit): Boolean {
         if (openPage(ind)) {
             val bitmap = Bitmap.createBitmap(rect.width(), rect.height(), Bitmap.Config.RGB_565)
             pdfiumCore.renderPageBitmap(pdfDocument, bitmap, ind,
@@ -74,14 +87,16 @@ class PdfFile(private val filePath:String,private val ctx: Context) {
             pdfiumCore.renderPageBitmap(pdfDocument, bitmap, ind,
                     -rect.left, -rect.top, pageWidth, pageHeight)
             fetch(bitmap)
+
             return true
         }
         return false
-    }
+    }*/
     fun bmpFromRect(rect: Rect, zoom:Float, ind: Int):Bitmap?{
         if (openPage(ind)) {
             val bitmap = Bitmap.createBitmap(rect.width(), rect.height(), Bitmap.Config.RGB_565)
             val rectSize = pageSize(ind)
+            info("$ind,$filePath")
             val pageWidth = (zoom* rectSize.width).toInt()
             val pageHeight = (zoom*rectSize.height).toInt()
             pdfiumCore.renderPageBitmap(pdfDocument, bitmap, ind,

@@ -11,7 +11,7 @@ class PageBuffer(ctx: Context){
     private var ctx: Context
     fun reset(names: List<String>){
         dispose()
-        array = Array<BackPage>(names.size, {i -> BackPage(names[i], i, ctx) })
+        array = Array<BackPage>(names.size, {i -> BackPage(names[i], 0, ctx) })
     }
     init {
         this.ctx = ctx

@@ -424,7 +424,7 @@ class BackGrid(cellSide: Int=BackGrid.CellSide) {
                         for (cellCol in pageCellColMin..pageCellColMax) {
                             val key = buildKey(cellRow, cellCol)
                             if (cellCanProc(key)) {
-                                val cellRect = Rect(cellRow * CellSide, cellCol * CellSide, (cellRow + 1) * CellSide, (cellCol + 1) * CellSide)
+                                val cellRect = Rect(cellCol * CellSide, cellRow * CellSide, (cellCol + 1) * CellSide, (cellRow + 1) * CellSide)
                                 info("cell=${keyToString(key)}:")//${cellRect.toString()}
                                 val interRect = Rect(cellRect)
                                 hasIntersect = interRect.intersect(pageRect)

@@ -129,6 +129,7 @@ class DrawLayout(ctx:Context):RelativeLayout(ctx){
                         })
             }
             isLoad = true
+            backRenderManager?.canRunning = true
             onLoad()
             dragPinManager.enable()
             invalidate()
@@ -140,7 +141,7 @@ class DrawLayout(ctx:Context):RelativeLayout(ctx){
         info("preRenderCells")
         backGrid.resetVisible(width, height)
         backGrid.visibleProcess({ pageInd: Int, rect: Rect ->
-            pageBuffer.fromInd(pageInd).bmpFromRect(pageInd, rect, zoom) ?:
+            pageBuffer.fromInd(pageInd).bmpFromRect(0, rect, zoom) ?:
                     Bitmap.createBitmap(rect.width(), rect.height(), Bitmap.Config.RGB_565).apply {
                         eraseColor(Color.YELLOW)
                     }
@@ -166,7 +167,8 @@ class DrawLayout(ctx:Context):RelativeLayout(ctx){
     //region    move zoom
     fun moveOffset(deltaX:Float, deltaY:Float){
         backGrid.moveOffset(deltaX,deltaY)
-        invalidate()
+        //invalidate()
+        onLoad()
     }
     fun moveTo(x:Float, y:Float){
         backGrid.moveTo(x.toInt(),y.toInt())
@@ -185,12 +187,14 @@ class DrawLayout(ctx:Context):RelativeLayout(ctx){
         backGrid.moveOffset(-cx, -cy)
         backGrid.zoomTo(backGrid.zoom*dr)
         backGrid.moveOffset(cx*dr,cy*dr)
-        invalidate()
+        //invalidate()
+        onLoad()
     }
     //endregion
 
     fun onLoad(){
-        preRenderCells(zoomFlag, zoom)
+        //preRenderCells(zoomFlag, zoom)
+        backRenderManager!!.request(zoomFlag, null)
     }
     fun onClick(e: MotionEvent):Boolean{
         zoomOffsetFromScreen(0.8F, e.x, e.y)
