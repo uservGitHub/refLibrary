@@ -92,6 +92,10 @@ class BackGrid(cellSide: Int=BackGrid.CellSide) {
     val width: Int get() = calcWidth(pageColCount)
     val height: Int get() = calcHeight(pageRowCount)
 
+    private inline fun pageLeft(colInd:Int) = pageGrid.pageHorSize * (colInd + 1) + (pageGrid.pagePerWidth * colInd * zoom).toInt()
+    private inline fun pageRight(colInd:Int) = pageGrid.pageHorSize * (colInd + 1) + (pageGrid.pagePerWidth * (colInd+1) * zoom).toInt()
+    private inline fun pageTop(rowInd: Int) = pageGrid.pageVerSize * (rowInd + 1) + (pageGrid.pagePerHeight * rowInd * zoom).toInt()
+    private inline fun pageBottom(rowInd: Int) = pageGrid.pageVerSize * (rowInd + 1) + (pageGrid.pagePerHeight * (rowInd+1) * zoom).toInt()
     private inline fun calcWidth(colCount: Int) = pageGrid.pageHorSize * (colCount + 1) + (pageGrid.pagePerWidth * colCount * zoom).toInt()
     private inline fun calcHeight(rowCount: Int) = pageGrid.pageVerSize * (rowCount + 1) + (pageGrid.pagePerHeight * rowCount * zoom).toInt()
     val innerEndX: Int
@@ -296,10 +300,12 @@ class BackGrid(cellSide: Int=BackGrid.CellSide) {
     private inline fun rectFromPage(ind: Int): Rect {
         val row = indToRowInd(ind)
         var col = indToColInd(ind)
-        return Rect(calcWidth(row),
+        return Rect(pageLeft(col),pageTop(row),
+                pageRight(col),pageBottom(row))
+        /*return Rect(calcWidth(row),
                 calcHeight(col),
                 calcWidth(row + 1),
-                calcHeight(col + 1))
+                calcHeight(col + 1))*/
     }
 
     private inline fun indToRowInd(ind: Int) = ind / pageColCount
@@ -433,8 +439,9 @@ class BackGrid(cellSide: Int=BackGrid.CellSide) {
                 strokeWidth = pageGrid.pageVerSize.toFloat()
             }
         }
-        canvas.translate(-shockX, -shockY)
+
         val rectVisible = Rect(visibleX, visibleY, visibleX + visibleWidth, visibleY + visibleHeight)
+        canvas.translate(-shockX, -shockY)
         pageInds.forEach {
             val pageRect = rectFromPage(it)
             horPaint?.let {
@@ -454,10 +461,15 @@ class BackGrid(cellSide: Int=BackGrid.CellSide) {
                 canvas.drawLine(xRight, y1, xRight, y2, it)
             }
             val clipPageRect = Rect(pageRect)
-            clipPageRect.intersect(rectVisible)
+            val isIntersect = clipPageRect.intersect(rectVisible)
+            assert(isIntersect)
+            if(!isIntersect){
+                info(it)
+            }
             drawPage(it, canvas, pageRect, clipPageRect)
         }
         canvas.translate(shockX, shockY)
+        //info(pageInds.toList())
     }
     //endregion
 

@@ -1,5 +1,6 @@
 package lib.book.refLibrary
 
+import android.view.MotionEvent;
 import android.content.Context
 import android.graphics.*
 import android.os.HandlerThread
@@ -29,6 +30,7 @@ class DrawLayout(ctx:Context):RelativeLayout(ctx){
     }
     val backGrid: BackGrid
     var backRenderManager: BackRenderManager? = null
+    var dragPinManager: DragPinManager
     val renderingHandlerThread: HandlerThread
     val pageBuffer:PageBuffer
     val cellBuffer:CellBuffer
@@ -43,6 +45,7 @@ class DrawLayout(ctx:Context):RelativeLayout(ctx){
         private set
     init {
         setWillNotDraw(false)
+        dragPinManager = DragPinManager(this)
         backGrid = BackGrid(cellSide)
         pageBuffer = PageBuffer(this.context)
         cellBuffer = CellBuffer(12,12,cellSide)
@@ -69,6 +72,7 @@ class DrawLayout(ctx:Context):RelativeLayout(ctx){
     }
     fun load(names:List<String>){
         try {
+            dragPinManager.disable()
             pageBuffer.reset(names)
             val pageGrid = PageGrid(0,4,4,600,800,3,0, Color.RED)
             backGrid.load(names.size, pageGrid)
@@ -92,6 +96,7 @@ class DrawLayout(ctx:Context):RelativeLayout(ctx){
                         })
             }
             isLoad = true
+            dragPinManager.enable()
             invalidate()
         }catch (e:Exception){
             info(e)
@@ -113,4 +118,27 @@ class DrawLayout(ctx:Context):RelativeLayout(ctx){
         })
     }
 
+    fun onMove(deltaX:Float, deltaY:Float){
+        backGrid.moveOffset(deltaX,deltaY)
+        invalidate()
+    }
+    fun onZoom(deltaZoom: Float, centerX:Float, centerY:Float){
+
+    }
+    fun onLoad(){
+
+    }
+    fun onClick(e: MotionEvent):Boolean{
+        /*val pageInd = backMap.getPageIndFromScreen(e.x,e.y)
+        val page = pageBuffer.fromInd(pageInd)
+        if(page.rawFile.next()){
+            synchronized(lockKeys) {
+                backMap.getCellKeyFromInd(pageInd).forEach {
+                    cellBuffer.fromKey(it).reset()
+                }
+            }
+            invalidate()
+        }*/
+        return true
+    }
 }
