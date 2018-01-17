@@ -1,0 +1,16 @@
+@startuml
+/'
+>>消息 >过程 o起终点 x结束 --返回 \/异步
+'/
+participant "Sender" as snd
+participant "Receiver" as rcv
+snd ->> rcv: draw message
+snd -> rcv: procedure call
+snd -\\ rcv: async send
+snd \\-- rcv: async return
+snd <<-- rcv: procedure return
+snd o-> rcv: start call
+snd o<-- rcv: end return
+snd <<->> rcv: two-way communication
+snd <--x rcv: deactivation
+@enduml
