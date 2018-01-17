@@ -1,0 +1,20 @@
+@startuml
+'预处理
+participant "缓存模块" as A
+==Initialization==
+rnote over A: 滑动窗口的中心为中心
+'A ->> A: 滑动窗口的\n中心为中心
+A ->] : 取数据<<前方预处理可能取不到>>
+A <--]: 收到数据块
+[<<- A: 可提供
+==Running==
+[->> A: 滑动x（有限制）
+[<<- A: 可提供
+A ->> A: 锁定
+rnote over A: cx += x 确定中心位置
+A o->] : 取<<预处理>>数据/无需预处理
+A <--o]: 收到<<预处理>>数据块
+rnote over A: 调整缓存数据
+A ->> A: 解锁
+...后面同上...
+@enduml

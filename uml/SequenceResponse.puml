@@ -1,0 +1,17 @@
+@startuml
+'响应处理
+participant "Host控件" as A
+[->> A:定位
+hnote over A: 无法响应
+[<<-- A: 空数据/忽略
+hnote over A: 可以响应
+A ->> A: 不得响应
+activate A #pink
+A o-\] :预处理
+[<<-- A: 返回数据
+rnote over A: 等待一段时间
+A /--o] :完毕,可响应
+deactivate A
+[->> A:定位
+...相同同理...
+@enduml
